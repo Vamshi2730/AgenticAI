@@ -6,7 +6,9 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-mongo_client = MongoClient("mongodb://localhost:27017/")
+COSMOS_CONNECTION_STRING = "mongodb://cosmosdb-rai-moderation:d7Aseua5M4tZGp7pkoxcAtAI0E8WaB5QtRsYrKBOrhduCI2N6RiLGDBr0AOHa9Aioz48Mx1KFL7OACDbKZpQUQ==@cosmosdb-rai-moderation.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@cosmosdb-rai-moderation@"
+ 
+mongo_client = MongoClient(COSMOS_CONNECTION_STRING)
 db = mongo_client['rai_db']
 edited_collection = db['edited_answers']
 original_collection = db['original_answers']
