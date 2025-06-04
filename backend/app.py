@@ -5,8 +5,16 @@ import requests
 
 app = Flask(__name__)
 CORS(app)
+
+import os
+from dotenv import load_dotenv
  
-mongo_client = MongoClient(COSMOS_CONNECTION_STRING)
+load_dotenv()  
+mongo_uri = os.getenv('COSMOS_CONNECTION_STRING')
+
+mongo_client = MongoClient(mongo_uri)
+
+# mongo_client = MongoClient("mongodb://localhost:27017/")
 db = mongo_client['rai_db']
 edited_collection = db['edited_answers']
 original_collection = db['original_answers']
@@ -39,30 +47,29 @@ def save_originals():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@app.route('/api/rai/update-answer', methods=['POST'])
-def save_updated_answer():
+@app.route('/api/rai/bulk-update-answers', methods=['POST'])
+def bulk_update_answers():
     try:
-        data = request.json
-        print("Received data:", data)
-        question = data.get("question")
-        updated_answer = data.get("updated_answer")
-        edited_by = data.get("edited_by")
-        edited_at = data.get("edited_at")
-
-        if not question or updated_answer is None:
-            return jsonify({"error": "Missing fields"}), 400
-
-        # Save edited answer only
-        edited_collection.update_one(
-            {"question": question},
-            {"$set": {"updated_answer": updated_answer,"edited_by": edited_by,
-                "edited_at": edited_at}},
-            upsert=True
-        )
-
-        return jsonify({"message": "Edited answer saved"})
+        edits = request.json.get("edits", [])
+        for edit in edits:
+            question = edit.get("question")
+            updated_answer = edit.get("updated_answer")
+            edited_by = edit.get("edited_by")
+            edited_at = edit.get("edited_at")
+            if question and updated_answer is not None:
+                edited_collection.update_one(
+                    {"question": question},
+                    {"$set": {
+                        "updated_answer": updated_answer,
+                        "edited_by": edited_by,
+                        "edited_at": edited_at
+                    }},
+                    upsert=True
+                )
+        return jsonify({"message": "Bulk update successful"})
     except Exception as e:
+        print('Bulk update error:', e)
         return jsonify({'error': str(e)}), 500
-
+    
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
